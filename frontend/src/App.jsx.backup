@@ -1,0 +1,178 @@
+import React from 'react';
+import './index.css';
+
+function App() {
+  return (
+    <div className="min-h-screen">
+      {/* Header */}
+      <header className="header">
+        <div className="container">
+          <div className="flex items-center justify-between py-4">
+            <h1 className="text-2xl font-bold text-gradient">
+              MonadSocial
+            </h1>
+            <nav className="flex space-x-6 flex-mobile-col">
+              <a href="#" className="nav-link active">Feed</a>
+              <a href="#" className="nav-link">Polls</a>
+              <a href="#" className="nav-link">Profile</a>
+            </nav>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="container py-8">
+        <div className="grid grid-cols-3">
+          {/* Left Sidebar */}
+          <div className="col-span-1">
+            <div className="card">
+              <h3 className="text-lg text-monad-light mb-4">
+                Profile Stats
+              </h3>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Posts</span>
+                  <span className="text-monad-primary font-semibold">12</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Likes</span>
+                  <span className="text-monad-primary font-semibold">48</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Polls Created</span>
+                  <span className="text-monad-primary font-semibold">3</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Feed */}
+          <div className="col-span-2">
+            {/* Post Form */}
+            <div className="card mb-6">
+              <h3 className="text-lg font-semibold text-monad-light mb-4">
+                What's happening on Monad?
+              </h3>
+              <textarea
+                className="input-field h-32 mb-4"
+                placeholder="Share your thoughts about Monad's incredible speed and low fees..."
+              />
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-400">
+                  Fee: 0.001 MON (~$0.002)
+                </span>
+                <button className="btn-primary">
+                  Post to Blockchain
+                </button>
+              </div>
+            </div>
+
+            {/* Sample Posts */}
+            <div className="space-y-6">
+              {/* Post 1 */}
+              <div className="card animate-fade-in">
+                <div className="flex items-start space-x-3">
+                  <div className="avatar">A</div>
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <span className="font-semibold text-monad-light">
+                        0xahd8...hyaba
+                      </span>
+                      <span className="text-sm text-gray-400">
+                        2 minutes ago
+                      </span>
+                    </div>
+                    <p className="text-monad-light mb-3">
+                      Just deployed my first smart contract on Monad! The 1-second finality is incredible. Gas fees are practically nothing compared to mainnet. This is the future! 🚀
+                    </p>
+                    <div className="flex items-center space-x-6">
+                      <button className="btn-ghost text-sm">
+                        💜 12 likes
+                      </button>
+                      <button className="btn-ghost text-sm">
+                        💬 3 comments
+                      </button>
+                      <button className="btn-ghost text-sm">
+                        🔄 Share
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Poll */}
+              <div className="card animate-fade-in">
+                <div className="flex items-start space-x-3">
+                  <div className="avatar">M</div>
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <span className="font-semibold text-monad-light">
+                        0xmon1...4d9a
+                      </span>
+                      <span className="text-sm text-gray-400">
+                        5 minutes ago
+                      </span>
+                    </div>
+                    <p className="text-monad-light mb-4">
+                      What's your favorite feature of Monad blockchain?
+                    </p>
+                    <div className="space-y-2 mb-4">
+                      <div className="poll-option">
+                        <span className="text-monad-light">1-second finality</span>
+                        <span className="text-monad-primary font-semibold">45%</span>
+                      </div>
+                      <div className="poll-option">
+                        <span className="text-monad-light">Ultra-low gas fees</span>
+                        <span className="text-monad-primary font-semibold">30%</span>
+                      </div>
+                      <div className="poll-option">
+                        <span className="text-monad-light">EVM compatibility</span>
+                        <span className="text-monad-primary font-semibold">25%</span>
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-400">
+                      124 votes • Ends in 25 minutes
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Post 2 */}
+              <div className="card animate-fade-in">
+                <div className="flex items-start space-x-3">
+                  <div className="avatar">D</div>
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <span className="font-semibold text-monad-light">
+                        0xdeve...c4f2
+                      </span>
+                      <span className="text-sm text-gray-400">
+                        8 minutes ago
+                      </span>
+                    </div>
+                    <p className="text-monad-light mb-3">
+                      Building the next generation of DeFi on Monad. The parallelized EVM is a game changer - we're seeing 10x performance improvements! 
+                    </p>
+                    <div className="flex items-center space-x-6">
+                      <button className="btn-ghost text-sm">
+                        💜 25 likes
+                      </button>
+                      <button className="btn-ghost text-sm">
+                        💬 8 comments
+                      </button>
+                      <button className="btn-ghost text-sm">
+                        🔄 Share
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+export default App;

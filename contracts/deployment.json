@@ -1,0 +1,11 @@
+{
+  "network": "monadTestnet",
+  "postContract": "0xbd0aa2B4c307B6b635906200886C4Def990337bd",
+  "pollContract": "0xeaF1080862033ED8C1A8CF0afE4cDb1798c9A43b",
+  "deployer": "0xdBf61005e9F5709AdB2b9b476Ff21F42BF3D6259",
+  "timestamp": "2025-09-11T12:22:26.196Z",
+  "explorerUrls": {
+    "post": "https://explorer.testnet.monad.xyz/address/0xbd0aa2B4c307B6b635906200886C4Def990337bd",
+    "poll": "https://explorer.testnet.monad.xyz/address/0xeaF1080862033ED8C1A8CF0afE4cDb1798c9A43b"
+  }
+}
