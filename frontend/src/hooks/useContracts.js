@@ -4,10 +4,7 @@ import { CONTRACT_ADDRESSES, POST_ABI } from '../contracts/abis';
 
 const SERVER_URL = 'http://localhost:3001';
 
-// Update this line
-const API_URL = process.env.NODE_ENV === 'production' 
-  ? '/api'  // Same domain for Vercel
-  : 'http://localhost:3001';
+
 
 export const useContracts = (signer, account) => {
   const [posts, setPosts] = useState([]);

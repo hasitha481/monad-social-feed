@@ -541,12 +541,7 @@ React.useEffect(() => {
   }
 }, [notification]);
 
-// Add this to your JSX where status messages appear:
-{notification && (
-  <div className={`status-message ${notification.includes('success') ? 'success' : 'error'}`}>
-    {notification}
-  </div>
-)}
+
 
   // Monad Logo Component
   const MonadLogo = ({ size = 40 }: { size?: number }) => (
