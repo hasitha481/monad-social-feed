@@ -16,6 +16,7 @@ const PROFILES_FILE = path.join(DATA_DIR, 'profiles.json');
 const REACTIONS_FILE = path.join(DATA_DIR, 'reactions.json');
 const COMMENTS_FILE = path.join(DATA_DIR, 'comments.json');
 const POLLS_FILE = path.join(DATA_DIR, 'polls.json');
+const SAVED_POSTS_FILE = path.join(DATA_DIR, 'saved-posts.json');
 
 // Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) {
@@ -54,6 +55,7 @@ let reactions = loadData(REACTIONS_FILE, {});
 let comments = loadData(COMMENTS_FILE, {});
 let profiles = loadData(PROFILES_FILE, {});
 let polls = loadData(POLLS_FILE, []);
+let savedPosts = loadData(SAVED_POSTS_FILE, {});
 
 console.log('🚀 MonadSocial Backend Server Starting with File Persistence...');
 console.log(`📊 Loaded ${posts.length} posts, ${Object.keys(profiles).length} profiles, ${polls.length} polls from storage`);
@@ -66,13 +68,14 @@ const autoSave = () => {
     saveData(PROFILES_FILE, profiles),
     saveData(REACTIONS_FILE, reactions),
     saveData(COMMENTS_FILE, comments),
-    saveData(POLLS_FILE, polls)
+    saveData(POLLS_FILE, polls),
+    saveData(SAVED_POSTS_FILE, savedPosts)
   ];
   
   const successCount = results.filter(r => r).length;
-  console.log(`💾 Auto-save completed: ${successCount}/5 files saved successfully`);
+  console.log(`💾 Auto-save completed: ${successCount}/6 files saved successfully`);
   
-  if (successCount < 5) {
+  if (successCount < 6) {
     console.error('⚠️  Some files failed to save! Check disk space and permissions.');
   }
 };
@@ -236,6 +239,67 @@ app.post('/posts', (req, res) => {
   }
 });
 
+// Update existing post (PATCH)
+app.patch('/api/posts/:id', (req, res) => {
+  try {
+    const postId = req.params.id;
+    const { content, user } = req.body;
+    
+    console.log(`📝 PATCH /api/posts/${postId} - Update request from ${user?.slice(0, 8)}...`);
+    
+    if (!user) {
+      return res.status(400).json({ error: 'User address required' });
+    }
+    
+    if (!content || !content.trim()) {
+      return res.status(400).json({ error: 'Content cannot be empty' });
+    }
+    
+    // Find the post to update
+    const postIndex = posts.findIndex(post => post.id === postId);
+    
+    if (postIndex === -1) {
+      console.log(`❌ Post not found: ${postId}`);
+      return res.status(404).json({ error: 'Post not found' });
+    }
+    
+    const post = posts[postIndex];
+    
+    // Check if user owns the post
+    if (post.author.toLowerCase() !== user.toLowerCase()) {
+      console.log(`❌ Unauthorized edit attempt by ${user.slice(0, 8)}... on post by ${post.author.slice(0, 8)}...`);
+      return res.status(403).json({ error: 'Can only edit own posts' });
+    }
+    
+    // Update the post
+    posts[postIndex] = {
+      ...post,
+      content: content.trim(),
+      updatedAt: Math.floor(Date.now() / 1000),
+      isEdited: true
+    };
+    
+    // Save immediately
+    saveData(POSTS_FILE, posts);
+    
+    const userProfile = profiles[user.toLowerCase()];
+    const displayName = userProfile?.displayName || `User ${user.slice(-4)}`;
+    
+    console.log(`✏️ Post edited by ${displayName} (${postId.slice(-8)})`);
+    console.log(`   New content: "${content.trim().slice(0, 50)}${content.trim().length > 50 ? '...' : ''}"`);
+    
+    res.json({ 
+      success: true, 
+      message: 'Post updated successfully',
+      post: posts[postIndex]
+    });
+    
+  } catch (error) {
+    console.error('Error updating post:', error);
+    res.status(500).json({ error: 'Failed to update post' });
+  }
+});
+
 // Like/unlike post
 app.post('/posts/:postId/like', (req, res) => {
   try {
@@ -356,6 +420,11 @@ app.delete('/posts/:postId', (req, res) => {
     delete reactions[postId];
     delete comments[postId];
     
+    // Also remove from all saved posts
+    Object.keys(savedPosts).forEach(userAddr => {
+      savedPosts[userAddr] = savedPosts[userAddr].filter(id => id !== postId);
+    });
+    
     // Save after deletion
     autoSave();
     
@@ -368,6 +437,68 @@ app.delete('/posts/:postId', (req, res) => {
   } catch (error) {
     console.error('Error deleting post:', error);
     res.status(500).json({ error: 'Failed to delete post' });
+  }
+});
+
+// ===== SAVED POSTS ENDPOINTS =====
+
+// Get user's saved posts
+app.get('/api/saved-posts/:address', (req, res) => {
+  try {
+    const userAddress = req.params.address.toLowerCase();
+    
+    const userSavedPosts = savedPosts[userAddress] || [];
+    console.log(`🔖 GET /api/saved-posts/${userAddress.slice(0, 8)}... - Returning ${userSavedPosts.length} saved posts`);
+    
+    res.json(userSavedPosts);
+    
+  } catch (error) {
+    console.error('Error fetching saved posts:', error);
+    res.status(500).json({ error: 'Failed to fetch saved posts' });
+  }
+});
+
+// Save/unsave a post
+app.post('/api/saved-posts/:address', (req, res) => {
+  try {
+    const userAddress = req.params.address.toLowerCase();
+    const { postId, action } = req.body;
+    
+    if (!postId || !action) {
+      return res.status(400).json({ error: 'Post ID and action required' });
+    }
+    
+    if (!savedPosts[userAddress]) {
+      savedPosts[userAddress] = [];
+    }
+    
+    if (action === 'save') {
+      if (!savedPosts[userAddress].includes(postId)) {
+        savedPosts[userAddress].push(postId);
+      }
+    } else if (action === 'unsave') {
+      savedPosts[userAddress] = savedPosts[userAddress].filter(id => id !== postId);
+    } else {
+      return res.status(400).json({ error: 'Action must be "save" or "unsave"' });
+    }
+    
+    // Save to file
+    saveData(SAVED_POSTS_FILE, savedPosts);
+    
+    const userProfile = profiles[userAddress];
+    const displayName = userProfile?.displayName || `User ${userAddress.slice(-4)}`;
+    
+    console.log(`🔖 Post ${action}d by ${displayName} (${postId.slice(-8)})`);
+    
+    res.json({ 
+      success: true, 
+      message: `Post ${action}d successfully`,
+      savedPosts: savedPosts[userAddress]
+    });
+    
+  } catch (error) {
+    console.error('Error saving/unsaving post:', error);
+    res.status(500).json({ error: 'Failed to update saved posts' });
   }
 });
 
@@ -591,11 +722,12 @@ app.get('/health', (req, res) => {
     data: {
       posts: posts.length,
       profiles: Object.keys(profiles).length,
-      polls: polls.length
+      polls: polls.length,
+      savedPostsUsers: Object.keys(savedPosts).length
     },
     storage: {
       directory: DATA_DIR,
-      files: [POSTS_FILE, PROFILES_FILE, REACTIONS_FILE, COMMENTS_FILE, POLLS_FILE].map(f => ({
+      files: [POSTS_FILE, PROFILES_FILE, REACTIONS_FILE, COMMENTS_FILE, POLLS_FILE, SAVED_POSTS_FILE].map(f => ({
         name: path.basename(f),
         exists: fs.existsSync(f),
         size: fs.existsSync(f) ? fs.statSync(f).size : 0
@@ -615,6 +747,7 @@ app.get('/stats', (req, res) => {
     const activeUsers = [...new Set(posts.map(p => p.author))].length;
     const totalVotes = polls.reduce((sum, poll) => sum + poll.totalVotes, 0);
     const activePolls = polls.filter(poll => poll.endTime > Date.now()).length;
+    const totalSavedPosts = Object.values(savedPosts).reduce((sum, userSaved) => sum + userSaved.length, 0);
     
     res.json({
       totalPosts: posts.length,
@@ -625,6 +758,8 @@ app.get('/stats', (req, res) => {
       totalPolls: polls.length,
       activePolls,
       totalVotes,
+      totalSavedPosts,
+      usersWithSavedPosts: Object.keys(savedPosts).length,
       profilesWithPhotos: Object.values(profiles).filter(p => p.profilePhoto).length,
       profilesWithBlockchainTx: Object.values(profiles).filter(p => p.txHash).length,
       averagePostsPerUser: activeUsers > 0 ? Math.round((posts.length / activeUsers) * 100) / 100 : 0,
@@ -633,7 +768,8 @@ app.get('/stats', (req, res) => {
         profiles: PROFILES_FILE,
         reactions: REACTIONS_FILE,
         comments: COMMENTS_FILE,
-        polls: POLLS_FILE
+        polls: POLLS_FILE,
+        savedPosts: SAVED_POSTS_FILE
       }
     });
   } catch (error) {
@@ -651,7 +787,9 @@ app.post('/backup', (req, res) => {
       reactions,
       comments,
       polls,
-      timestamp: new Date().toISOString()
+      savedPosts,
+      timestamp: new Date().toISOString(),
+      version: '1.0.0'
     };
     
     const backupFile = path.join(DATA_DIR, `backup_${Date.now()}.json`);
@@ -664,109 +802,13 @@ app.post('/backup', (req, res) => {
       totalData: { 
         posts: posts.length, 
         profiles: Object.keys(profiles).length,
-        polls: polls.length 
+        polls: polls.length,
+        savedPosts: Object.keys(savedPosts).length
       } 
     });
   } catch (error) {
     console.error('Error creating backup:', error);
     res.status(500).json({ error: 'Failed to create backup' });
-  }
-});
-
-// ADD THIS TO YOUR backend/server.js file (after existing routes, before app.listen())
-
-// PATCH endpoint for updating posts
-app.patch('/api/posts/:id', async (req, res) => {
-  try {
-    const postId = req.params.id;
-    const { content, user } = req.body;
-    
-    if (!user) {
-      return res.status(400).json({ error: 'User address required' });
-    }
-    
-    if (!content || !content.trim()) {
-      return res.status(400).json({ error: 'Content cannot be empty' });
-    }
-    
-    // Find the post to update
-    const postIndex = posts.findIndex(post => post.id === postId);
-    
-    if (postIndex === -1) {
-      return res.status(404).json({ error: 'Post not found' });
-    }
-    
-    const post = posts[postIndex];
-    
-    // Check if user owns the post
-    if (post.author.toLowerCase() !== user.toLowerCase()) {
-      return res.status(403).json({ error: 'Can only edit own posts' });
-    }
-    
-    // Update the post
-    posts[postIndex] = {
-      ...post,
-      content: content.trim(),
-      updatedAt: Math.floor(Date.now() / 1000),
-      isEdited: true
-    };
-    
-    // Save immediately
-    saveData(POSTS_FILE, posts);
-    
-    const userProfile = profiles[user.toLowerCase()];
-    const displayName = userProfile?.displayName || `User ${user.slice(-4)}`;
-    
-    console.log(`✏️ Post edited by ${displayName} (${postId.slice(-8)})`);
-    
-    res.json({ 
-      success: true, 
-      message: 'Post updated successfully',
-      post: posts[postIndex]
-    });
-    
-  } catch (error) {
-    console.error('Error updating post:', error);
-    res.status(500).json({ error: 'Failed to update post' });
-  }
-});
-
-// If you want saved posts functionality, add this too:
-app.post('/api/saved-posts/:address', async (req, res) => {
-  try {
-    const userAddress = req.params.address.toLowerCase();
-    const { postId, action } = req.body;
-    
-    let savedPosts = {};
-    const savedPostsPath = path.join(__dirname, 'data', 'saved-posts.json');
-    
-    if (fs.existsSync(savedPostsPath)) {
-      savedPosts = JSON.parse(fs.readFileSync(savedPostsPath, 'utf8'));
-    }
-    
-    if (!savedPosts[userAddress]) {
-      savedPosts[userAddress] = [];
-    }
-    
-    if (action === 'save') {
-      if (!savedPosts[userAddress].includes(postId)) {
-        savedPosts[userAddress].push(postId);
-      }
-    } else if (action === 'unsave') {
-      savedPosts[userAddress] = savedPosts[userAddress].filter(id => id !== postId);
-    }
-    
-    fs.writeFileSync(savedPostsPath, JSON.stringify(savedPosts, null, 2));
-    
-    res.json({ 
-      success: true, 
-      message: `Post ${action}d successfully`,
-      savedPosts: savedPosts[userAddress]
-    });
-    
-  } catch (error) {
-    console.error('Error saving/unsaving post:', error);
-    res.status(500).json({ error: 'Failed to update saved posts' });
   }
 });
 
@@ -779,11 +821,12 @@ app.listen(PORT, () => {
   console.log(`💾 Backup: http://localhost:${PORT}/backup`);
   console.log('');
   console.log('🔗 API Endpoints:');
-  console.log('   📝 Posts: GET/POST /posts, POST /posts/:id/like, POST /posts/:id/comments, DELETE /posts/:id');
+  console.log('   📝 Posts: GET/POST /posts, PATCH /api/posts/:id, POST /posts/:id/like, POST /posts/:id/comments, DELETE /posts/:id');
   console.log('   👤 Profiles: GET/POST /profiles/:address, GET /profiles');
   console.log('   🗳️  Polls: GET/POST /polls, POST /polls/:id/vote, DELETE /polls/:id, GET /polls/:id');
+  console.log('   🔖 Saved Posts: GET/POST /api/saved-posts/:address');
   console.log('   🛠️  Utils: GET /health, GET /stats, POST /backup');
   console.log('');
   console.log('💾 Auto-save every 30 seconds + on shutdown');
-  console.log('🚀 Ready for MonadSocial with persistent storage and poll support!');
+  console.log('🚀 Ready for MonadSocial with complete functionality!');
 });
