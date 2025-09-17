@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { CONTRACT_ADDRESSES, POST_ABI } from '../contracts/abis';
 
-const SERVER_URL = 'http://localhost:3001';
+const SERVER_URL = 'https://monad-social-backend.onrender.com';
 
 
 
@@ -36,7 +36,7 @@ export const useContracts = (signer, account) => {
     } catch (err) {
       console.error('API call failed:', err);
       if (err.message.includes('fetch')) {
-        throw new Error('Server unavailable - check if backend is running on port 3001');
+        throw new Error('Server unavailable - check Render backend at https://monad-social-backend.onrender.com');
       }
       throw err;
     }

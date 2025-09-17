@@ -219,7 +219,7 @@ function App() {
   const loadPolls = React.useCallback(async () => {
     try {
       setPollsLoading(true);
-      const response = await fetch('http://localhost:3001/polls');
+      const response = await fetch('https://monad-social-backend.onrender.com');
       if (response.ok) {
         const serverPolls = await response.json();
         
@@ -283,7 +283,7 @@ function App() {
       };
 
       // Save to backend
-      const response = await fetch('http://localhost:3001/polls', {
+      const response = await fetch('https://monad-social-backend.onrender.com/polls', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newPoll)
@@ -361,7 +361,7 @@ function App() {
       );
 
       // Send to backend
-      const response = await fetch(`http://localhost:3001/polls/${pollId}/vote`, {
+      const response = await fetch(`https://monad-social-backend.onrender.com/polls/${pollId}/vote`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -391,7 +391,7 @@ function App() {
     setDeletingPoll(pollId);
     
     try {
-      const response = await fetch(`http://localhost:3001/polls/${pollId}`, {
+      const response = await fetch(`https://monad-social-backend.onrender.com/polls/${pollId}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user: getAccountAddress() })
@@ -451,7 +451,7 @@ const handleUpdatePost = async (postId: string) => {
   try {
     console.log('Updating post:', postId, 'with content:', editPostContent.trim());
     
-    const response = await fetch(`http://localhost:3001/api/posts/${postId}`, {
+    const response = await fetch(`https://monad-social-backend.onrender.com/api/posts/${postId}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
