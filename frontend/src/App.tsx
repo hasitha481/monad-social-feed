@@ -219,7 +219,7 @@ function App() {
   const loadPolls = React.useCallback(async () => {
     try {
       setPollsLoading(true);
-      const response = await fetch('https://monad-social-backend.onrender.com');
+      const response = await fetch('https://monad-social-backend.onrender.com/polls');
       if (response.ok) {
         const serverPolls = await response.json();
         
